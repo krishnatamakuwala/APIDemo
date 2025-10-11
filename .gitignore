@@ -1,0 +1,23 @@
+# dependencies
+client/node_modules/
+server/node_modules/
+
+# Logs
+client/logs/
+server/logs/
+
+# VS Code launch settings
+.vscode
+client/.vscode/
+server/.vscode/
+
+# Build files
+client/.next/
+server/dist/
+
+# Environment files
+client/.env
+server/.env
+
+# Certificates
+certificates/
