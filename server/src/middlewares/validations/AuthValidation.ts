@@ -7,10 +7,8 @@ import { z } from "zod";
 export class AuthValidation {
     public static validateUserRegistration(req: Request, res: Response, next: NextFunction) {
         try {
-            CommonInputValidation.name("First name").parse(req.body.firstName);
-            CommonInputValidation.name("Last name")
-                .optional()
-                .or(z.literal('')).parse(req.body.lastName);
+            CommonInputValidation.nameField("First name").parse(req.body.firstName);
+            CommonInputValidation.nameField("Last name").parse(req.body.lastName);
             CommonInputValidation.email.parse(req.body.email);
             CommonInputValidation.password.parse(req.body.password);
             next();

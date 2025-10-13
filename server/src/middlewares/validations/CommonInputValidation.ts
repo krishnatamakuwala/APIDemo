@@ -3,7 +3,7 @@ import { Conditions } from "../../customs/Conditions";
 import { OrderDirection } from "../../utilities/pgSQL/enums/OrderDirection";
 
 export class CommonInputValidation {
-    public static name = (name: string) => {
+    public static nameField = (name: string) => {
         return z.string({
             required_error: `${name} is required.`
         })

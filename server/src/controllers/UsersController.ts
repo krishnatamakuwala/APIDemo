@@ -133,6 +133,19 @@ export default class UsersController {
     }
 
     /**
+     * Delete all test users
+     */
+    async deleteAllTestUser() {
+        try {
+            const userRepo = new UserRepo();
+            await userRepo.deleteAllTestUser();
+        } catch (error) {
+            const err = error as Error;
+            LogManager.error(err.message ?? "Failed to delete all test users.", err);
+        }
+    }
+
+    /**
      * Find specified user
      * @param req Request
      * @param res Response

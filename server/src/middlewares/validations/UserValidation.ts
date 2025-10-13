@@ -7,8 +7,8 @@ import { z } from "zod";
 export class UserValidation {
     public static validateUser(req: Request, res: Response, next: NextFunction) {
         try {
-            CommonInputValidation.name("First name").parse(req.body.firstName);
-            CommonInputValidation.name("Last name").parse(req.body.lastName);
+            CommonInputValidation.nameField("First name").parse(req.body.firstName);
+            CommonInputValidation.nameField("Last name").parse(req.body.lastName);
             CommonInputValidation.email.parse(req.body.email);
             CommonInputValidation.password.parse(req.body.password);
             next();
@@ -25,8 +25,8 @@ export class UserValidation {
 
     public static validateNullableUser(req: Request, res: Response, next: NextFunction) {
         try {
-            CommonInputValidation.name("First name").nullable().parse(req.body.firstName);
-            CommonInputValidation.name("Last name").nullable().parse(req.body.lastName);
+            CommonInputValidation.nameField("First name").nullable().parse(req.body.firstName);
+            CommonInputValidation.nameField("Last name").nullable().parse(req.body.lastName);
             CommonInputValidation.email.nullable().parse(req.body.email);
             next();
         } catch (error) {

@@ -8,6 +8,7 @@ import { JoinType } from "../../utilities/pgSQL/enums/JoinType";
 import { QueryAggregateFunction } from "../../utilities/pgSQL/enums/QueryAggregateFunction";
 import { QueryOperator } from "../../utilities/pgSQL/enums/QueryOperator";
 import { ICount, IOrders, IPreparedQuery } from "../../utilities/pgSQL/query/BaseQuery";
+import { DeleteQuery } from "../../utilities/pgSQL/query/DeleteQuery";
 import { InsertQuery, InsertQueryParams } from "../../utilities/pgSQL/query/InsertQuery";
 import { SelectQuery, SelectQueryParams } from "../../utilities/pgSQL/query/SelectQuery";
 import { UpdateQuery } from "../../utilities/pgSQL/query/UpdateQuery";
@@ -16,6 +17,7 @@ import { IUserRepo } from "./IUserRepo";
 export class UserRepo implements IUserRepo {
 
     private databaseConnection: DBConnector;
+    private env = process.env.NODE_ENV || 'development';
 
     /**
      * Get an instance of a repository with default or specific database
@@ -40,6 +42,9 @@ export class UserRepo implements IUserRepo {
         if (CurrentUserData.getCurrentUser()) {
             insertQueryParams.insertColumns?.push(User.CREATEDBY);
             insertQueryParams.values = [user.firstName, user.lastName, user.email, user.password, DateTime.CurrentISOTime(), CurrentUserData.getCurrentUser().id]
+        } else if (this.env === "test") {
+            insertQueryParams.insertColumns?.push(User.CREATEDBY);
+            insertQueryParams.values = [user.firstName, user.lastName, user.email, user.password, DateTime.CurrentISOTime(), CurrentUserData.testUserCreatorUserId]
         }
         const insertQuery: InsertQuery = new InsertQuery(insertQueryParams);
         const preparedQuery: IPreparedQuery = insertQuery.generateQuery();
@@ -107,6 +112,29 @@ export class UserRepo implements IUserRepo {
             }]
         });
         const preparedQuery: IPreparedQuery = updateQuery.generateQuery();
+        const deletedUser = await this.databaseConnection.runPreparedQuery(preparedQuery, User);
+        if (returnData && Conditions.hasAny(deletedUser)) {
+            return deletedUser[0];
+        }
+        return null;
+    }
+
+    /**
+     * Delete all test users
+     * @param userId User Id
+     * @param returnData Is required to return data after performing action
+     * @returns Deleted User or Null
+     */
+    async deleteAllTestUser(returnData?: boolean): Promise<User | null> {
+        const deleteQuery: DeleteQuery = new DeleteQuery({
+            tableName: User.TABLE_NAME,
+            conditions: [{
+                columnName: User.CREATEDBY,
+                columnValue: CurrentUserData.testUserCreatorUserId,
+                operator: QueryOperator.equal
+            }]
+        });
+        const preparedQuery: IPreparedQuery = deleteQuery.generateQuery();
         const deletedUser = await this.databaseConnection.runPreparedQuery(preparedQuery, User);
         if (returnData && Conditions.hasAny(deletedUser)) {
             return deletedUser[0];
