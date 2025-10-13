@@ -11,6 +11,8 @@ export interface CurrentUser {
 export default class CurrentUserData {
     private static currentUser: CurrentUser;
 
+    public static testUserCreatorUserId: number = -1;
+
     /**
      * Set Current User Data by User Id
      * @param userId User Id

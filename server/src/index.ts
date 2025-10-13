@@ -1,5 +1,15 @@
 import dotenv from "dotenv";
-dotenv.config();
+import path, { join } from "path";
+const getDotEnvPath = (_env?: string) => {
+    if (_env) {
+        return `.env.${_env}`
+    }
+    return '.env'
+}
+const result = dotenv.config({ path: path.resolve(process.cwd(), getDotEnvPath(process.env.NODE_ENV)) });
+if (result.error) {
+    throw result.error;
+}
 
 import express, { Application, Request, Response } from "express";
 import * as https from "https";
@@ -8,7 +18,6 @@ import cors from "cors";
 import AuthRoutes from "./routes/AuthRoutes";
 import UserRoutes from "./routes/UserRoutes";
 import { readFileSync } from "fs";
-import { join } from "path";
 import { LogManager } from "./utilities/logManager/LogManager";
 
 class App {
@@ -54,3 +63,5 @@ https.createServer({
 }, app).listen(port, () => {
     console.log(`Server started on port: ${port}.`);
 });
+
+export default app;

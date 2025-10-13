@@ -8,6 +8,8 @@ export class LogManager {
     public static logger: Logger;
     private static fileLogger: Logger;
 
+    private static _env = process.env.NODE_ENV || 'development';
+
     /**
      * Setup File Logger
      */
@@ -65,7 +67,9 @@ export class LogManager {
      */
     public static error(message: string, error?: Error) {
         try {
-            this.logger.error(message, { err: error });
+            if (this._env !== "test") {
+                this.logger.error(message, { err: error });
+            }
             this.fileLogger.error(message, { err: error });
         } catch (error) {
             this.fileLogger.error("An error occured while logging in logstash.", error);
@@ -82,7 +86,9 @@ export class LogManager {
      */
     public static warning(message: string) {
         try {
-            this.logger.warn(message);
+            if (this._env !== "test") {
+                this.logger.warn(message);
+            }
             this.fileLogger.warn(message);
         } catch (error) {
             this.fileLogger.error("An error occured while logging in logstash.", error);
@@ -95,7 +101,9 @@ export class LogManager {
      */
     public static information(message: string) {
         try {
-            this.logger.info(message);
+            if (this._env !== "test") {
+                this.logger.info(message);
+            }
             this.fileLogger.info(message);
         } catch (error) {
             this.fileLogger.error("An error occured while logging in logstash.", error);
@@ -136,7 +144,11 @@ export class LogManager {
         if (!existsSync(logDirectory)) {
             mkdirSync(logDirectory);
         }
-        console.log(join(logDirectory, `app-${DateTime.CurrentISOTime().split('T')[0]}.log`));
-        return join(logDirectory, `app-${DateTime.CurrentISOTime().split('T')[0]}.log`);
+        let filePath = `app-`;
+        if (this._env === "test") {
+            filePath += "test-";
+        }
+        filePath += `${DateTime.CurrentISOTime().split('T')[0]}.log`;
+        return join(logDirectory, filePath);
     }
 }
