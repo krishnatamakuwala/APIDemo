@@ -24,10 +24,15 @@ export default class AuthController {
             new_user.lastName = req.body.lastName;
             new_user.email = req.body.email;
             new_user.password = hashedPassword;
+            new_user.isRoot = true;
 
             const doesEmailExists = await userRepo.getByEmail(new_user.email);
             if (doesEmailExists) {
                 LogManager.warning("User email already exists.");
+                /*
+                    Returning 200 http status instead of 409 for already exists email ,
+                    for security reasons
+                */
                 return res.status(HttpStatus.Ok).send({
                     status: ResponseStatus.Warning,
                     message: "User email already exists.",
@@ -36,7 +41,7 @@ export default class AuthController {
 
             await userRepo.create(new_user);
 
-            res.status(HttpStatus.Ok).json({
+            res.status(HttpStatus.Created).json({
                 status: ResponseStatus.Success,
                 message: "Successfully created a user.",
             });
@@ -82,7 +87,7 @@ export default class AuthController {
             } catch (error) {
                 const err = error as Error;
                 LogManager.error("Invalid login credentials.", err);
-                res.status(HttpStatus.BadRequest).json({
+                res.status(HttpStatus.UnAuthorised).json({
                     status: ResponseStatus.Error,
                     message: "Invalid login credentials.",
                 });
@@ -93,7 +98,7 @@ export default class AuthController {
             LogManager.error(errMessage, err);
             res.status(HttpStatus.BadRequest).json({
                 status: ResponseStatus.Error,
-                message: errMessage,
+                message: "Something went wrong, please try again.",
             });
         }
     }

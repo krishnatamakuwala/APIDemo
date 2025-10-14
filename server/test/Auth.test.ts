@@ -24,7 +24,7 @@ before(async () => {
 
 describe("Testing User Auth", () => {
     describe("/POST register", () => {
-        it("it should not register user with only first name and last name", done => {
+        it("it should not register user without required fields", done => {
             _chai
                 .request(app)
                 .post("/api/v1/auth/register")
@@ -57,7 +57,7 @@ describe("Testing User Auth", () => {
                     expect(res.body).to.have.property("status");
                     expect(res.body.status).to.equal(ResponseStatus.Error);
                     expect(res.body).to.have.property("message");
-                    expect(res.body.message).to.equal("First name must be 3 to 35 characters long.");
+                    expect(res.body.message).to.equal("First name can not be empty.");
                 });
 
             _chai
@@ -74,7 +74,7 @@ describe("Testing User Auth", () => {
                     expect(res.body).to.have.property("status");
                     expect(res.body.status).to.equal(ResponseStatus.Error);
                     expect(res.body).to.have.property("message");
-                    expect(res.body.message).to.equal("Last name must be 3 to 35 characters long.");
+                    expect(res.body.message).to.equal("Last name can not be empty.");
                     done();
                 });
         });
@@ -130,7 +130,7 @@ describe("Testing User Auth", () => {
                     password: user.password
                 })
                 .end((err, res) => {
-                    expect(res).to.have.status(HttpStatus.Ok);
+                    expect(res).to.have.status(HttpStatus.Created);
                     expect(res.body).to.have.property("status");
                     expect(res.body.status).to.equal(ResponseStatus.Success);
                     expect(res.body).to.have.property("message");
@@ -139,7 +139,7 @@ describe("Testing User Auth", () => {
                 });
         });
 
-        it("it should not register user with same email", done => {
+        it("it should not register user with existing email", done => {
             _chai
                 .request(app)
                 .post("/api/v1/auth/register")
@@ -208,7 +208,7 @@ describe("Testing User Auth", () => {
                     password: "Wrong@123"
                 })
                 .end((err, res) => {
-                    expect(res).to.have.status(HttpStatus.BadRequest);
+                    expect(res).to.have.status(HttpStatus.UnAuthorised);
                     expect(res.body).to.have.property("status");
                     expect(res.body.status).to.equal(ResponseStatus.Error);
                     expect(res.body).to.have.property("message");
@@ -237,8 +237,4 @@ describe("Testing User Auth", () => {
                 });
         });
     });
-});
-
-describe("Testing User Login", () => {
-    
 });

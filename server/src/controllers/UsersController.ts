@@ -29,6 +29,10 @@ export default class UsersController {
             const doesEmailExists = await userRepo.getByEmail(new_user.email);
             if (doesEmailExists) {
                 LogManager.warning("User email already exists.");
+                /*
+                    Returning 200 http status instead of 409 for already exists email,
+                    for security reasons
+                */
                 return res.status(HttpStatus.Ok).send({
                     status: ResponseStatus.Warning,
                     message: "User email already exists.",
@@ -37,7 +41,7 @@ export default class UsersController {
 
             await userRepo.create(new_user);
 
-            res.status(HttpStatus.Ok).json({
+            res.status(HttpStatus.Created).json({
                 status: ResponseStatus.Success,
                 message: "Successfully created a user.",
             });
@@ -66,10 +70,23 @@ export default class UsersController {
             new_user.lastName = req.body.lastName ?? null;
             new_user.email = req.body.email ?? null;
 
-            if (new_user.email !== null) {
+            const user = await userRepo.getById(new_user.userId);
+            if ((new_user.firstName === null && new_user.lastName === null && new_user.email === null) || (new_user.firstName === user.firstName && new_user.lastName === user.lastName && new_user.email === user.email)) {
+                LogManager.warning("There is no change in any data.");
+                return res.status(HttpStatus.Ok).send({
+                    status: ResponseStatus.Warning,
+                    message: "There is no change in any data.",
+                });
+            }
+
+            if (new_user.email !== null && new_user.email !== user.email) {
                 const doesEmailExists = await userRepo.getByEmail(new_user.email);
                 if (doesEmailExists) {
                     LogManager.warning("User email already exists.");
+                    /*
+                        Returning 200 http status instead of 409 for already exists email,
+                        for security reasons
+                    */
                     return res.status(HttpStatus.Ok).send({
                         status: ResponseStatus.Warning,
                         message: "User email already exists.",
@@ -104,11 +121,12 @@ export default class UsersController {
             const user = await userRepo.getByEmail(req.body.email, true, true);
             if (!user || !(await compare(req.body.password, user.password))) {
                 LogManager.warning("Invalid credentials.");
-                return res.status(HttpStatus.Ok).send({
-                    status: ResponseStatus.Warning,
+                return res.status(HttpStatus.UnAuthorised).send({
+                    status: ResponseStatus.Error,
                     message: "Invalid credentials.",
                 });
             }
+            LogManager.information(user.isRoot.toString())
             if (user && user.isRoot) {
                 LogManager.warning("Deletion of admin user is not permitted.");
                 return res.status(HttpStatus.Ok).send({

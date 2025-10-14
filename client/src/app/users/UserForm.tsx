@@ -57,9 +57,13 @@ const UserForm = forwardRef<ICustomFormRef, ICustomFormProps>((props, ref) => {
             setFirstNameError(true);
             setFirstNameErrorMessage("First Name is required.");
             isValid = false;
-        } else if (firstName && (firstName.length < 3 || firstName.length > 35)) {
+        } else if (firstName && firstName.length < 1) {
             setFirstNameError(true);
-            setFirstNameErrorMessage("First Name must be 3 to 35 characters long.");
+            setFirstNameErrorMessage("First Name can not be empty.");
+            isValid = false;
+        } else if (firstName && firstName.length > 35) {
+            setFirstNameError(true);
+            setFirstNameErrorMessage("First Name must be less than 35 characters.");
             isValid = false;
         } else {
             setFirstNameError(false);
@@ -70,9 +74,13 @@ const UserForm = forwardRef<ICustomFormRef, ICustomFormProps>((props, ref) => {
             setLastNameError(true);
             setLastNameErrorMessage("Last Name is required.");
             isValid = false;
-        } else if (lastName && (lastName.length < 3 || lastName.length > 35)) {
+        } else if (lastName && lastName.length < 1) {
             setLastNameError(true);
-            setLastNameErrorMessage("Last Name must be 3 to 35 characters long..");
+            setLastNameErrorMessage("Last Name can not be empty.");
+            isValid = false;
+        } else if (lastName && lastName.length > 35) {
+            setLastNameError(true);
+            setLastNameErrorMessage("Last Name must be less than 35 characters.");
             isValid = false;
         } else {
             setLastNameError(false);
@@ -111,9 +119,11 @@ const UserForm = forwardRef<ICustomFormRef, ICustomFormProps>((props, ref) => {
     }
 
     function handleDelete(email: string, password: string) {
-        apiContext.post("/v1/users/delete", {
-            email: email,
-            password: password
+        apiContext.put("/v1/users/delete", {
+            data: {
+                email: email,
+                password: password
+            }
         })
             .then((response) => {
                 const res = response.data as IAPIResponse;
@@ -149,6 +159,7 @@ const UserForm = forwardRef<ICustomFormRef, ICustomFormProps>((props, ref) => {
         setIsSubmitting(true);
         let url: string = "";
         let _firstName, _lastName, _email;
+        let request = apiContext.post;
         if (props.formType === FormType.add) {
             setUserId(null);
             url = "/v1/users/create";
@@ -156,13 +167,14 @@ const UserForm = forwardRef<ICustomFormRef, ICustomFormProps>((props, ref) => {
             _lastName = lastName;
             _email = email;
         } else {
+            request = apiContext.patch;
             url = "/v1/users/update";
             _firstName = oldUserData?.firstName === firstName ? null : firstName;
             _lastName = oldUserData?.lastName === lastName ? null : lastName;
             _email = oldUserData?.email === email ? null : email;
         }
 
-        apiContext.post(url, {
+        request(url, {
             userId: userId !== null ? Number(userId) : null,
             firstName: _firstName,
             lastName: _lastName,
