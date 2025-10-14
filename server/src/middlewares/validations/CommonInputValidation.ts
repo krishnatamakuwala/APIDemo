@@ -99,8 +99,10 @@ export class CommonInputValidation {
                     invalid_type_error: "Order column direction configuration must be a valid enum."
                 }).optional()
             }), {
+                invalid_type_error: "Order configuration must be an array of object.",
                 required_error: "Order configuration is required."
-            })
+            }),
+            searchText: this.string("Search text", undefined, undefined, undefined, true).optional()
         }, {
             required_error: "Grid configuration is required."
         });

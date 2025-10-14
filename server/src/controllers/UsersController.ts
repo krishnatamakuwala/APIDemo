@@ -7,6 +7,7 @@ import { genSalt, hash, compare } from "bcryptjs";
 import { ModelColumnProperyMapping } from "../utilities/pgSQL/helpers/ModelColumnPropertyMapping";
 import { GridColumnConfig, IGridColumnConfig } from "../configs/GridConfig";
 import { ModelKey } from "../enums/ModelKey";
+import { DataNotFoundError } from "../customs/Errors";
 
 export default class UsersController {
 
@@ -176,14 +177,24 @@ export default class UsersController {
             res.status(HttpStatus.Ok).json({
                 status: ResponseStatus.Success,
                 message: "Successfully fetched user data.",
-                data: user,
+                data: {
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    email: user.email
+                },
             });
         } catch (error) {
             const err = error as Error;
-            LogManager.error(err.message ?? "Failed to fetch a user data.", err);
-            res.status(HttpStatus.BadRequest).json({
+            let status = HttpStatus.BadRequest;
+            let errMessage = "Failed to fetch a user data.";
+            if (error instanceof DataNotFoundError) {
+                status = HttpStatus.Ok;
+                errMessage = error.message;
+            }
+            LogManager.error(err.message ?? errMessage, err);
+            res.status(status).json({
                 status: ResponseStatus.Error,
-                message: "Failed to fetch a user data",
+                message: errMessage,
             });
         }
     }
