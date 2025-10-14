@@ -2,6 +2,7 @@ import CurrentUserData from "../../configs/CurrentUserData";
 import { IGridConfig } from "../../configs/GridConfig";
 import { Conditions } from "../../customs/Conditions";
 import { DateTime } from "../../customs/DateTime";
+import { DataNotFoundError } from "../../customs/Errors";
 import { User } from "../../models/User";
 import DBConnector, { PostgreSQLConfig } from "../../utilities/pgSQL/DBConnector";
 import { JoinType } from "../../utilities/pgSQL/enums/JoinType";
@@ -202,12 +203,16 @@ export class UserRepo implements IUserRepo {
                 columnName: User.USER_ID,
                 columnValue: userId,
                 operator: QueryOperator.equal
+            }, {
+                columnName: User.DELETEDDATE,
+                columnValue: "",
+                operator: QueryOperator.isNull
             }]
         });
         const preparedQuery: IPreparedQuery = getRoleQuery.generateQuery();
         const user = await this.databaseConnection.runPreparedQuery<User>(preparedQuery, User);
         if (!Conditions.hasAny(user)) {
-            throw new Error("User not found.");
+            throw new DataNotFoundError("User not found.");
         }
         return user[0];
     }

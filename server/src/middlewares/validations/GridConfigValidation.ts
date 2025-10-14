@@ -6,9 +6,7 @@ import { HttpStatus, ResponseStatus } from "../../enums/APIStatus";
 export class GridConfigValidation {
     public static validateConfig(req: Request, res: Response, next: NextFunction) {
         try {
-            if (req.headers['x-auth-interface'] !== process.env.AUTH_INTERFACE_AGENT) {
-                CommonInputValidation.gridConfig().parse(req.body.config);
-            }
+            CommonInputValidation.gridConfig().parse(req.body.config);
             next();
         } catch (error) {
             const err = error as Error;

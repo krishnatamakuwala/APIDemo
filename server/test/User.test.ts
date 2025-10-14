@@ -9,7 +9,7 @@ import { UserRepo } from "../src/repositories/user/UserRepo";
 const _chai = use(chaiHttp);
 const expect = _chai.expect;
 
-let user: User;
+let user: User, user2: User;
 let adminUser: User;
 let authCookie: AuthCookie;
 const userRepo = new UserRepo();
@@ -20,6 +20,12 @@ before(async () => {
     user.lastName = "LastNameTest2";
     user.email = "firstname.lastname2@email.com";
     user.password = "First@123";
+
+    user2 = new User();
+    user2.firstName = "FirstNameTest2";
+    user2.lastName = "LastNameTest2";
+    user2.email = "firstname.lastname2@email.com";
+    user2.password = "First@123";
 
     adminUser = new User();
     adminUser.email = "firstname.lastname@email.com";
@@ -650,7 +656,7 @@ describe("Testing User CRUD", () => {
                     done();
                 });
         });
-        
+
         it("it should not delete user with invalid credentials", done => {
             _chai
                 .request(app)
@@ -704,6 +710,472 @@ describe("Testing User CRUD", () => {
                     expect(res.body.status).to.equal(ResponseStatus.Success);
                     expect(res.body).to.have.property("message");
                     expect(res.body.message).to.equal("Successfully deleted a user.");
+
+                    userRepo.create(user2).then(() => {
+                        userRepo.getByEmail(user2.email, false, true).then((_user) => {
+                            if (_user) {
+                                user2.userId = _user.userId;
+                            }
+                            done();
+                        });
+                    });
+                });
+        });
+    });
+
+    describe("/POST findOne", () => {
+        it("it should not get user without user id", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/findOne")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({})
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.BadRequest);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("User id is required.");
+                    done();
+                });
+        });
+
+        it("it should not get user if user id is not a number", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/findOne")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    userId: "2t"
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.BadRequest);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("User id must be a number.");
+                    done();
+                });
+        });
+
+        it("it should not get user if user id is negative or zero", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/findOne")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    userId: 0
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.BadRequest);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("User id must be > 0.");
+                    done();
+                });
+        });
+
+        it("it should not get user without login or without auth token", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/findOne")
+                .send({
+                    userId: Number(user.userId)
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.UnAuthorised);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Auth token must be provided.");
+                    done();
+                });
+        });
+
+        it("it should not get user with wrong or invalid auth token", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/findOne")
+                .set('Cookie', `${authCookie.cookieName}=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IjEyMzQ1Njc4OTAiLCJuYW1lIjoiSm9obiBEb2UifQ.FJtknc9j9frRg0N4Iua2Q6DmaMaCJsCz5uawiJxVDic`)
+                .send({
+                    userId: Number(user.userId)
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.UnAuthorised);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Invalid JWT Token.");
+                    done();
+                });
+        });
+
+        it("it should not get user if user not exists", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/findOne")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    userId: 999
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.Ok);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("User not found.");
+                    expect(res.body).to.not.have.property("data");
+                    done();
+                });
+        });
+
+        it("it should not get user if user is deleted", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/findOne")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    userId: Number(user.userId)
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.Ok);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("User not found.");
+                    expect(res.body).to.not.have.property("data");
+                    done();
+                });
+        });
+
+        it("it should get user", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/findOne")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    userId: Number(user2.userId)
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.Ok);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Success);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Successfully fetched user data.");
+                    expect(res.body).to.have.property("data");
+                    expect(res.body.data).to.have.property("firstName");
+                    expect(res.body.data.firstName).to.be.a("string");
+                    expect(res.body.data).to.have.property("lastName");
+                    expect(res.body.data.lastName).to.be.a("string");
+                    expect(res.body.data).to.have.property("email");
+                    expect(res.body.data.email).to.be.a("string");
+                    done();
+                });
+        });
+    });
+
+    describe("/POST count", () => {
+        it("it should not get all users count without config", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/count")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({})
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.BadRequest);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Grid configuration is required.");
+                    done();
+                });
+        });
+
+        it("it should not get all users count if config is not valid", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/count")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    config: {
+                        recordPerPage: 1,
+                        totalPage: 1,
+                        currentPage: 0,
+                        orders: 1
+                    }
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.BadRequest);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Order configuration must be an array of object.");
+                    done();
+                });
+        });
+
+        it("it should not get all users count without login or without auth token", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/count")
+                .send({
+                    config: {
+                        recordPerPage: 10,
+                        totalPage: 1,
+                        currentPage: 0,
+                        orders: []
+                    }
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.UnAuthorised);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Auth token must be provided.");
+                    done();
+                });
+        });
+
+        it("it should not get all users count with wrong or invalid auth token", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/count")
+                .set('Cookie', `${authCookie.cookieName}=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IjEyMzQ1Njc4OTAiLCJuYW1lIjoiSm9obiBEb2UifQ.FJtknc9j9frRg0N4Iua2Q6DmaMaCJsCz5uawiJxVDic`)
+                .send({
+                    config: {
+                        recordPerPage: 10,
+                        totalPage: 1,
+                        currentPage: 0,
+                        orders: []
+                    }
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.UnAuthorised);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Invalid JWT Token.");
+                    done();
+                });
+        });
+
+        it("it should get all users count", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/count")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    config: {
+                        recordPerPage: 10,
+                        totalPage: 1,
+                        currentPage: 0,
+                        orders: []
+                    }
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.Ok);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Success);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Successfully fetched users count.");
+                    expect(res.body).to.have.property("data");
+                    expect(res.body.data).to.have.property("count");
+                    expect(Number(res.body.data.count)).to.be.greaterThan(0);
+                    done();
+                });
+        });
+
+        it("it should get 1 user count matching specific email", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/count")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    config: {
+                        recordPerPage: 10,
+                        totalPage: 1,
+                        currentPage: 0,
+                        orders: [],
+                        searchText: "firstname.lastname2"
+                    }
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.Ok);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Success);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Successfully fetched users count.");
+                    expect(res.body).to.have.property("data");
+                    expect(res.body.data).to.have.property("count");
+                    expect(Number(res.body.data.count)).to.equal(1);
+                    done();
+                });
+        });
+    });
+
+    describe("/POST / get all", () => {
+        it("it should not get all users without config", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({})
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.BadRequest);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Grid configuration is required.");
+                    done();
+                });
+        });
+
+        it("it should not get all users if config is not valid", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    config: {
+                        recordPerPage: 1,
+                        totalPage: 1,
+                        currentPage: 0,
+                        orders: 1
+                    }
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.BadRequest);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Order configuration must be an array of object.");
+                    done();
+                });
+        });
+
+        it("it should not get all users without login or without auth token", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/")
+                .send({
+                    config: {
+                        recordPerPage: 10,
+                        totalPage: 1,
+                        currentPage: 0,
+                        orders: []
+                    }
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.UnAuthorised);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Auth token must be provided.");
+                    done();
+                });
+        });
+
+        it("it should not get all users with wrong or invalid auth token", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/")
+                .set('Cookie', `${authCookie.cookieName}=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IjEyMzQ1Njc4OTAiLCJuYW1lIjoiSm9obiBEb2UifQ.FJtknc9j9frRg0N4Iua2Q6DmaMaCJsCz5uawiJxVDic`)
+                .send({
+                    config: {
+                        recordPerPage: 10,
+                        totalPage: 1,
+                        currentPage: 0,
+                        orders: []
+                    }
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.UnAuthorised);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Invalid JWT Token.");
+                    done();
+                });
+        });
+
+        it("it should get 1 users", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    config: {
+                        recordPerPage: 1,
+                        totalPage: 2,
+                        currentPage: 0,
+                        orders: []
+                    }
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.Ok);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Success);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Successfully fetched users.");
+                    expect(res.body).to.have.property("data");
+                    expect(res.body.data).to.be.an("array");
+                    expect(res.body.data).to.have.lengthOf.at.most(1);
+                    done();
+                });
+        });
+
+        it("it should get 10 users", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    config: {
+                        recordPerPage: 10,
+                        totalPage: 1,
+                        currentPage: 0,
+                        orders: []
+                    }
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.Ok);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Success);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Successfully fetched users.");
+                    expect(res.body).to.have.property("data");
+                    expect(res.body.data).to.be.an("array");
+                    expect(res.body.data).to.have.lengthOf.at.most(10);
+                    done();
+                });
+        });
+
+        it("it should get 1 user matching specific email", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/users/")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .send({
+                    config: {
+                        recordPerPage: 10,
+                        totalPage: 1,
+                        currentPage: 0,
+                        orders: [],
+                        searchText: "firstname.lastname2"
+                    }
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.Ok);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Success);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Successfully fetched users.");
+                    expect(res.body).to.have.property("data");
+                    expect(res.body.data).to.be.an("array");
+                    expect(res.body.data).to.have.lengthOf(1);
+                    expect(res.body.data[0]).to.have.property("email");
+                    expect(res.body.data[0].email).to.equal(user2.email);
                     done();
                 });
         });
