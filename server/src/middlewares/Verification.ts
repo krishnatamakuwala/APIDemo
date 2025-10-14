@@ -33,7 +33,8 @@ export class Verification {
             maxAge: maxAge
         }, function (err, decoded) {
             if (err) {
-                throw err;
+                LogManager.error(err.message, err);
+                throw new Error("Invalid JWT Token.");
             } else {
                 decodedToken = decoded as UserJWTPayload
             }
@@ -44,9 +45,12 @@ export class Verification {
     public static userVerification = async (req: Request, res: Response, next: NextFunction) => {
         try {
             let maxAge;
+            if (!req.cookies["X-Auth-Token"] || req.cookies["X-Auth-Token"] === "") {
+                throw new Error("Auth token must be provided.");
+            }
             const decodedToken = Verification.verifyJWT(req.cookies["X-Auth-Token"], maxAge);
             if (!decodedToken) {
-                throw new Error("Invalid JWT Token");
+                throw new Error("Invalid JWT Token.");
             }
             const user = await CurrentUserData.setCurrentUser(decodedToken, true);
             if (user) {

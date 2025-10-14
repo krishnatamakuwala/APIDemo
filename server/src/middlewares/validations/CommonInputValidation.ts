@@ -7,8 +7,8 @@ export class CommonInputValidation {
         return z.string({
             required_error: `${name} is required.`
         })
-            .min(3, { message: `${name} must be 3 to 35 characters long.` })
-            .max(35, { message: `${name} must be 3 to 35 characters long.` });
+            .nonempty({ message: `${name} can not be empty.` })
+            .max(35, { message: `${name} must be less than 35 characters.` });
     }
 
     public static password = z.string({
@@ -103,124 +103,6 @@ export class CommonInputValidation {
             })
         }, {
             required_error: "Grid configuration is required."
-        });
-    }
-
-    public static editedModulePermissions = () => {
-        return z.array(z.object({
-            permissionId: z.number({
-                required_error: "Permission id is required.",
-                invalid_type_error: "Permission id must be a number."
-            }).nonnegative({ message: "Permission id must be > 0." }),
-            isModule: z.literal(true, {
-                required_error: "Is module is required.",
-                invalid_type_error: "Is module must be a boolean.",
-                message: "Is module must be a true."
-            }),
-            viewPermission: z.object({
-                oldValue: z.boolean({
-                    required_error: "Old value is required.",
-                    invalid_type_error: "Old value must be a boolean."
-                }),
-                newValue: z.boolean({
-                    required_error: "New value is required.",
-                    invalid_type_error: "New value must be a boolean."
-                }),
-            }, {
-                required_error: "View permission is required."
-            }),
-            addPermission: z.object({
-                oldValue: z.boolean({
-                    required_error: "Old value is required.",
-                    invalid_type_error: "Old value must be a boolean."
-                }),
-                newValue: z.boolean({
-                    required_error: "New value is required.",
-                    invalid_type_error: "New value must be a boolean."
-                }),
-            }, {
-                required_error: "Add permission is required."
-            }),
-            editPermission: z.object({
-                oldValue: z.boolean({
-                    required_error: "Old value is required.",
-                    invalid_type_error: "Old value must be a boolean."
-                }),
-                newValue: z.boolean({
-                    required_error: "New value is required.",
-                    invalid_type_error: "New value must be a boolean."
-                }),
-            }, {
-                required_error: "Edit permission is required."
-            }),
-            deletePermission: z.object({
-                oldValue: z.boolean({
-                    required_error: "Old value is required.",
-                    invalid_type_error: "Old value must be a boolean."
-                }),
-                newValue: z.boolean({
-                    required_error: "New value is required.",
-                    invalid_type_error: "New value must be a boolean."
-                }),
-            }, {
-                required_error: "Delete permission is required."
-            }),
-            executePermission: z.undefined({
-                required_error: "Execute permission is required.",
-                invalid_type_error: "Execute permission must be undefined if it is for module."
-            }),
-        }, {
-            required_error: "Module permission is required."
-        }), {
-            invalid_type_error: "Module permissions must be an array.",
-            required_error: "Module permissions array is required."
-        });
-    }
-
-    public static editedRolePermissions = () => {
-        return z.array(z.object({
-            permissionId: z.number({
-                required_error: "Permission id is required.",
-                invalid_type_error: "Permission id must be a number."
-            }).nonnegative({ message: "Permission id must be > 0." }),
-            isModule: z.literal(false, {
-                required_error: "Is module is required.",
-                invalid_type_error: "Is module must be a boolean.",
-                message: "Is module must be a false."
-            }),
-            viewPermission: z.undefined({
-                required_error: "View permission is required.",
-                invalid_type_error: "View permission must be undefined if it is not for module."
-            }),
-            addPermission: z.undefined({
-                required_error: "View permission is required.",
-                invalid_type_error: "View permission must be undefined if it is not for module."
-            }),
-            editPermission: z.undefined({
-                required_error: "View permission is required.",
-                invalid_type_error: "View permission must be undefined if it is not for module."
-            }),
-            deletePermission: z.undefined({
-                required_error: "View permission is required.",
-                invalid_type_error: "View permission must be undefined if it is not for module."
-            }),
-            executePermission: z.object({
-                oldValue: z.boolean({
-                    required_error: "Old value is required.",
-                    invalid_type_error: "Old value must be a boolean."
-                }),
-                newValue: z.boolean({
-                    required_error: "New value is required.",
-                    invalid_type_error: "New value must be a boolean."
-                }),
-            }, {
-                required_error: "Execute permission is required."
-            }),
-        }, {
-            required_error: "Role permission is required."
-        }), {
-            invalid_type_error: "Role permissions must be an array.",
-            required_error: "Role permissions array is required."
         });
     }
 

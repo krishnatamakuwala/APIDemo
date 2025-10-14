@@ -17,7 +17,7 @@ import { IUserRepo } from "./IUserRepo";
 export class UserRepo implements IUserRepo {
 
     private databaseConnection: DBConnector;
-    private env = process.env.NODE_ENV || 'development';
+    private _env = process.env.NODE_ENV || 'development';
 
     /**
      * Get an instance of a repository with default or specific database
@@ -36,15 +36,12 @@ export class UserRepo implements IUserRepo {
     async create(user: User, returnData?: boolean): Promise<User | null> {
         const insertQueryParams: InsertQueryParams = {
             tableName: User.TABLE_NAME,
-            insertColumns: [User.USER_FIRSTNAME, User.USER_LASTNAME, User.USER_EMAIL, User.USER_PASSWORD, User.CREATEDDATE],
-            values: [user.firstName, user.lastName, user.email, user.password, DateTime.CurrentISOTime()]
+            insertColumns: [User.USER_FIRSTNAME, User.USER_LASTNAME, User.USER_EMAIL, User.USER_PASSWORD, User.USER_ISROOT, User.CREATEDDATE],
+            values: [user.firstName, user.lastName, user.email, user.password, user.isRoot ?? false, DateTime.CurrentISOTime()]
         }
         if (CurrentUserData.getCurrentUser()) {
             insertQueryParams.insertColumns?.push(User.CREATEDBY);
-            insertQueryParams.values = [user.firstName, user.lastName, user.email, user.password, DateTime.CurrentISOTime(), CurrentUserData.getCurrentUser().id]
-        } else if (this.env === "test") {
-            insertQueryParams.insertColumns?.push(User.CREATEDBY);
-            insertQueryParams.values = [user.firstName, user.lastName, user.email, user.password, DateTime.CurrentISOTime(), CurrentUserData.testUserCreatorUserId]
+            insertQueryParams.values = [user.firstName, user.lastName, user.email, user.password, user.isRoot ?? false, DateTime.CurrentISOTime(), CurrentUserData.getCurrentUser().id]
         }
         const insertQuery: InsertQuery = new InsertQuery(insertQueryParams);
         const preparedQuery: IPreparedQuery = insertQuery.generateQuery();
@@ -105,7 +102,7 @@ export class UserRepo implements IUserRepo {
                 columnName: User.USER_ID,
                 columnValue: userId,
                 operator: QueryOperator.equal
-            },{
+            }, {
                 columnName: User.USER_ISROOT,
                 columnValue: false,
                 operator: QueryOperator.equal
@@ -126,18 +123,16 @@ export class UserRepo implements IUserRepo {
      * @returns Deleted User or Null
      */
     async deleteAllTestUser(returnData?: boolean): Promise<User | null> {
-        const deleteQuery: DeleteQuery = new DeleteQuery({
-            tableName: User.TABLE_NAME,
-            conditions: [{
-                columnName: User.CREATEDBY,
-                columnValue: CurrentUserData.testUserCreatorUserId,
-                operator: QueryOperator.equal
-            }]
-        });
-        const preparedQuery: IPreparedQuery = deleteQuery.generateQuery();
-        const deletedUser = await this.databaseConnection.runPreparedQuery(preparedQuery, User);
-        if (returnData && Conditions.hasAny(deletedUser)) {
-            return deletedUser[0];
+        if (this._env === "test") {
+            const deleteQuery: DeleteQuery = new DeleteQuery({
+                tableName: User.TABLE_NAME,
+            });
+            const preparedQuery: IPreparedQuery = deleteQuery.generateQuery();
+            const deletedUser = await this.databaseConnection.runPreparedQuery(preparedQuery, User);
+            if (returnData && Conditions.hasAny(deletedUser)) {
+                return deletedUser[0];
+            }
+            return null;
         }
         return null;
     }
@@ -172,6 +167,8 @@ export class UserRepo implements IUserRepo {
         if (isAuthRequired) {
             selectQueryParams.columns?.push({
                 columnName: User.USER_PASSWORD
+            }, {
+                columnName: User.USER_ISROOT
             });
         }
         if (isUserIdRequired) {
@@ -256,7 +253,7 @@ export class UserRepo implements IUserRepo {
      * @returns All users
      */
     async getAll(gridConfig?: IGridConfig): Promise<User[]> {
-        let limit: number | undefined, offset: number | undefined, orders: IOrders[] | undefined,searchText: string | undefined;
+        let limit: number | undefined, offset: number | undefined, orders: IOrders[] | undefined, searchText: string | undefined;
         if (gridConfig) {
             limit = gridConfig.recordPerPage;
             offset = (gridConfig.recordPerPage ?? 0) * (gridConfig.currentPage ?? 0);

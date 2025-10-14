@@ -44,7 +44,7 @@ class UserRoutes extends BaseRoutes {
             }
         );
 
-        this.router.post(
+        this.router.patch(
             "/update/",
             UserValidation.validateNullableUser,
             UserValidation.validateUserId,
@@ -54,7 +54,7 @@ class UserRoutes extends BaseRoutes {
             }
         );
 
-        this.router.post(
+        this.router.delete(
             "/delete/",
             UserValidation.validateUserAuth,
             Verification.userVerification,
