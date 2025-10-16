@@ -6,8 +6,8 @@
   "scripts": {
     "test": "cross-env NODE_ENV=test mocha --timeout 10000 --exit",
     "build": "tsc",
-    "start": "nodemon .\\dist\\index.js",
-    "restart": "npm run build && npm run start"
+    "start": "nodemon ./dist/src/index.js",
+    "restart": "npm run build && npm start"
   },
   "keywords": [],
   "author": "",

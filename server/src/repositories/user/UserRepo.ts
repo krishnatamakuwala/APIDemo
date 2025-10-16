@@ -14,6 +14,7 @@ import { InsertQuery, InsertQueryParams } from "../../utilities/pgSQL/query/Inse
 import { SelectQuery, SelectQueryParams } from "../../utilities/pgSQL/query/SelectQuery";
 import { UpdateQuery } from "../../utilities/pgSQL/query/UpdateQuery";
 import { IUserRepo } from "./IUserRepo";
+import { genSalt, hash } from "bcryptjs";
 
 export class UserRepo implements IUserRepo {
 
@@ -52,6 +53,34 @@ export class UserRepo implements IUserRepo {
         }
         if (returnData) {
             return insertedUser[0];
+        }
+        return null;
+    }
+
+    async createWithPasswordForTest(user: User, returnData?: boolean): Promise<User | null> {
+        if (this._env === "test") {
+            const _user = user;
+            const salt = await genSalt(10);
+            _user.password = await hash(_user.password, salt);
+            const insertQueryParams: InsertQueryParams = {
+                tableName: User.TABLE_NAME,
+                insertColumns: [User.USER_FIRSTNAME, User.USER_LASTNAME, User.USER_EMAIL, User.USER_PASSWORD, User.USER_ISROOT, User.CREATEDDATE],
+                values: [_user.firstName, _user.lastName, _user.email, _user.password, _user.isRoot ?? false, DateTime.CurrentISOTime()]
+            }
+            if (CurrentUserData.getCurrentUser()) {
+                insertQueryParams.insertColumns?.push(User.CREATEDBY);
+                insertQueryParams.values = [_user.firstName, _user.lastName, _user.email, _user.password, _user.isRoot ?? false, DateTime.CurrentISOTime(), CurrentUserData.getCurrentUser().id]
+            }
+            const insertQuery: InsertQuery = new InsertQuery(insertQueryParams);
+            const preparedQuery: IPreparedQuery = insertQuery.generateQuery();
+            const insertedUser = await this.databaseConnection.runPreparedQuery(preparedQuery, User);
+            if (!Conditions.hasAny(insertedUser)) {
+                throw new Error("Failed to create user.");
+            }
+            if (returnData) {
+                return insertedUser[0];
+            }
+            return null;
         }
         return null;
     }
