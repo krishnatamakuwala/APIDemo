@@ -21,7 +21,7 @@ export function LogoIcon() {
                 variant="h5"
                 color="#eda068"
             >
-                QuStart
+                APIDemo
             </Typography>
         </Stack>
     );

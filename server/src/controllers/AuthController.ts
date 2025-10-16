@@ -71,19 +71,27 @@ export default class AuthController {
                 if (!user || !(await compare(req.body.password, user.password))) {
                     throw new Error("Invalid login credentials.");
                 }
-                const token = Verification.signJWT({ firstName: user.firstName, lastName: user.lastName, email: user.email });
-                const cookieOption: CookieOptions = {
-                    httpOnly: true,
-                    secure: true,
-                    maxAge: 1 * 60 * 60 * 10000,
-                    path: "/",
-                    sameSite: "none"
+                if (!user.isRoot) {
+                    LogManager.warning("User is not admin/root. Only admin can login.");
+                    res.status(HttpStatus.UnAuthorised).json({
+                        status: ResponseStatus.Error,
+                        message: "Only admin can login.",
+                    });
+                } else {
+                    const token = Verification.signJWT({ firstName: user.firstName, lastName: user.lastName, email: user.email });
+                    const cookieOption: CookieOptions = {
+                        httpOnly: true,
+                        secure: true,
+                        maxAge: 1 * 60 * 60 * 10000,
+                        path: "/",
+                        sameSite: "none"
+                    }
+                    res.cookie("X-Auth-Token", token, cookieOption);
+                    res.status(HttpStatus.Ok).send({
+                        status: ResponseStatus.Success,
+                        message: "Successfully logged in."
+                    });
                 }
-                res.cookie("X-Auth-Token", token, cookieOption);
-                res.status(HttpStatus.Ok).send({
-                    status: ResponseStatus.Success,
-                    message: "Successfully logged in."
-                });
             } catch (error) {
                 const err = error as Error;
                 LogManager.error("Invalid login credentials.", err);

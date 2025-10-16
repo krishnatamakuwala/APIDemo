@@ -711,13 +711,13 @@ describe("Testing User CRUD", () => {
                     expect(res.body).to.have.property("message");
                     expect(res.body.message).to.equal("Successfully deleted a user.");
 
-                    userRepo.create(user2).then(() => {
-                        userRepo.getByEmail(user2.email, false, true).then((_user) => {
-                            if (_user) {
-                                user2.userId = _user.userId;
-                            }
-                            done();
-                        });
+                    const _password = user.password;
+                    userRepo.createWithPasswordForTest(user2, true).then((_user) => {
+                        if (_user) {
+                            user2.userId = _user.userId;
+                            user2.password = _password;
+                        }
+                        done();
                     });
                 });
         });
@@ -1176,6 +1176,50 @@ describe("Testing User CRUD", () => {
                     expect(res.body.data).to.have.lengthOf(1);
                     expect(res.body.data[0]).to.have.property("email");
                     expect(res.body.data[0].email).to.equal(user2.email);
+                    done();
+                });
+        });
+    });
+
+    describe("/POST logout", () => {
+        it("it should let user logout", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/auth/logout")
+                .set('Cookie', `${authCookie.cookieName}=${authCookie.cookieValue}`)
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.Ok);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Success);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Successfully logged out.");
+
+                    const resCookie = res.header["set-cookie"][0].split(";")[0].split("=");
+                    authCookie = {
+                        cookieName: resCookie[0],
+                        cookieValue: resCookie[1]
+                    }
+                    expect(authCookie.cookieValue).to.equal("");
+
+                    done();
+                });
+        });
+        
+        it("it should let not user login if the user is not admin", done => {
+            _chai
+                .request(app)
+                .post("/api/v1/auth/login")
+                .send({
+                    email: user2.email,
+                    password: user2.password
+                })
+                .end((err, res) => {
+                    expect(res).to.have.status(HttpStatus.UnAuthorised);
+                    expect(res.body).to.have.property("status");
+                    expect(res.body.status).to.equal(ResponseStatus.Error);
+                    expect(res.body).to.have.property("message");
+                    expect(res.body.message).to.equal("Only admin can login.");
+                    expect(res).to.not.have.cookie("X-Auth-Token");
                     done();
                 });
         });

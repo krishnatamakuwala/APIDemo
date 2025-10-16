@@ -8,11 +8,12 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import { useAuthRedirect, useUserContext } from '@/shared/context/UserContext';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import PersonIcon from '@mui/icons-material/Person';
 
 export default function MenuContent() {
     const router = useRouter();
+    const pathName = usePathname();
     const { user, loading } = useUserContext();
     useAuthRedirect(user, loading);
 
@@ -25,7 +26,7 @@ export default function MenuContent() {
             <List>
                     <ListItem disablePadding sx={{ display: 'block' }}>
                         <ListItemButton
-                            selected={true}
+                            selected={pathName === "/users"}
                             onClick={() => handleClick()}
                         >
                             <ListItemIcon>{<PersonIcon />}</ListItemIcon>

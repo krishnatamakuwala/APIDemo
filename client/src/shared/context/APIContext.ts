@@ -21,7 +21,7 @@ apiContext.interceptors.response.use(
     (error) => {
         const { config, response } = error;
         // Check for 401 status and absence of the `skipAuthRedirect` flag
-        if (response && response.status === HttpStatus.UnAuthorised && !config?.skipAuthRedirect) {
+        if (response && response.status === HttpStatus.UnAuthorised && !config?.skipAuthRedirect && !(config?.url === "/v1/auth/login" || config?.url === "/v1/auth/register")) {
             // Redirect to signin if the flag is not set
             redirect("/auth/signin");
         }

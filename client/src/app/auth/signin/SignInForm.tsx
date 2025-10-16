@@ -10,10 +10,14 @@ import TextField from '@mui/material/TextField';
 import { useAlert } from '@/shared/context/AlertContext';
 import { apiContext, IAPIResponse } from '@/shared/context/APIContext';
 import { ResponseStatus } from '@/enums/APIStatus';
-import { redirect, useRouter } from 'next/navigation';
+import { redirect } from 'next/navigation';
+import { useAuthRedirectToHome, useUserContext } from '@/shared/context/UserContext';
 
 export default function SignInForm() {
     const { addAlert } = useAlert();
+    const { user, loading } = useUserContext();
+    useAuthRedirectToHome(user, loading);
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 

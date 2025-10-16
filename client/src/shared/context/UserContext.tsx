@@ -32,7 +32,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 return;
             }
 
-            let reDirectPath: string | undefined = undefined;
             apiContext.get("/v1/auth/me")
                 .then((response) => {
                     const res = response.data as IAPIResponse;
@@ -42,13 +41,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 })
                 .catch(() => {
                     setUser(null);
-                    reDirectPath = "/auth/signin";
                 })
                 .finally(() => {
                     setLoading(false);
-                    if (reDirectPath) {
-                        redirect(reDirectPath);
-                    }
                 });
         }
 
@@ -72,6 +67,14 @@ export const useAuthRedirect = (user: IUser | null, loading: boolean) => {
     useEffect(() => {
         if (!loading && !user) {
             redirect('/auth/signin');
+        }
+    }, [loading, user]);
+}
+
+export const useAuthRedirectToHome = (user: IUser | null, loading: boolean) => {
+    useEffect(() => {
+        if (!loading && user) {
+            redirect('/');
         }
     }, [loading, user]);
 }
